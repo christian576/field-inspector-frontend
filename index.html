@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Inspector Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .auth-section {
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            text-align: left;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+        }
+
+        .capture-section {
+            text-align: center;
+        }
+
+        .capture-btn {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .photo-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+        }
+
+        .photo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+        }
+
+        .audio-btn {
+            background: linear-gradient(45deg, #4ecdc4, #6ee5dc);
+            color: white;
+        }
+
+        .audio-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78,205,196,0.4);
+        }
+
+        .auth-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn:hover,
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+
+        .capture-btn:disabled,
+        .save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .recording {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .preview-section {
+            margin-top: 20px;
+        }
+
+        .preview-img {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 5px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            color: white;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .history-item h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .history-item p {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .history-item img {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .sync-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .sync-online {
+            background: rgba(40, 167, 69, 0.8);
+        }
+
+        .sync-offline {
+            background: rgba(220, 53, 69, 0.8);
+        }
+
+        .sync-syncing {
+            background: rgba(255, 193, 7, 0.8);
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logout-btn {
+            background: rgba(220, 53, 69, 0.8);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #cameraInput {
+            display: none;
+        }
+
+        .emoji {
+            font-size: 1.3em;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        .offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #dc3545;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .offline-indicator.show {
+            transform: translateY(0);
+        }
+
+        .api-status {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .api-online {
+            background: rgba(40, 167, 69, 0.8);
+        }
+
+        .api-offline {
+            background: rgba(220, 53, 69, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-indicator" id="offlineIndicator">
+        📶 Sin conexión - Los datos se guardarán localmente
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Field Inspector Pro</h1>
+            <p>Inspecciones profesionales con IA</p>
+        </div>
+
+        <div class="api-status" id="apiStatus">
+            🔄 Verificando conexión con servidor...
+        </div>
+
+        <div class="sync-indicator" id="syncIndicator">
+            <span id="syncIcon">🔄</span>
+            <span id="syncText">Iniciando...</span>
+        </div>
+
+        <!-- Sección de autenticación -->
+        <div id="authSection" class="card">
+            <div class="auth-section">
+                <h3 id="authTitle">🔐 Iniciar Sesión</h3>
+                <form id="authForm">
+                    <div class="form-group" id="nameGroup" style="display: none;">
+                        <label for="fullName">👤 Nombre completo:</label>
+                        <input type="text" id="fullName" placeholder="Tu nombre completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">📧 Email:</label>
+                        <input type="email" id="email" placeholder="tu@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">🔒 Contraseña:</label>
+                        <input type="password" id="password" placeholder="Mínimo 6 caracteres" required>
+                    </div>
+                    <button type="submit" class="capture-btn auth-btn" id="authSubmitBtn">
+                        <span id="authButtonText">🚀 Iniciar Sesión</span>
+                    </button>
+                </form>
+                <p style="margin-top: 15px; color: #666;">
+                    <span id="authSwitchText">¿No tienes cuenta?</span>
+                    <a href="#" id="authSwitchLink" style="color: #667eea; font-weight: 600;">Crear cuenta</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Usuario logueado -->
+        <div id="userInfo" class="user-info hidden">
+            <span id="userEmail">usuario@email.com</span>
+            <div>
+                <button class="refresh-btn" onclick="syncData()">🔄 Sync</button>
+                <button class="logout-btn" onclick="logout()">🚪 Salir</button>
+            </div>
+        </div>
+
+        <!-- Sección principal de la app -->
+        <div id="appSection" class="hidden">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('capture')">📸 Capturar</button>
+                <button class="tab-btn" onclick="showTab('history')">📋 Historial</button>
+            </div>
+
+            <div id="captureTab" class="tab-content">
+                <div class="card">
+                    <div class="capture-section">
+                        <button class="capture-btn photo-btn" onclick="capturePhoto()">
+                            <span class="emoji">📸</span> Tomar Foto
+                        </button>
+                        <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handlePhotoCapture(event)">
+                        
+                        <button class="capture-btn audio-btn" id="audioBtn" onclick="toggleAudioRecording()">
+                            <span class="emoji">🎤</span> <span id="audioText">Grabar Audio</span>
+                        </button>
+                    </div>
+
+                    <div id="statusDiv" class="status hidden"></div>
+
+                    <div class="preview-section">
+                        <img id="photoPreview" class="preview-img hidden" alt="Preview">
+                        <div id="audioPreview" class="hidden">
+                            <p>🎵 Audio grabado correctamente</p>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="locationInput">📍 Ubicación:</label>
+                            <input type="text" id="locationInput" placeholder="Ingresa la ubicación...">
+                        </div>
+                        <div class="form-group">
+                            <label for="notesInput">📝 Notas adicionales:</label>
+                            <textarea id="notesInput" placeholder="Agrega notas sobre el problema o tarea..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="transcriptionInput">🎯 Transcripción del audio:</label>
+                            <textarea id="transcriptionInput" placeholder="La transcripción aparecerá aquí automáticamente..." readonly></textarea>
+                        </div>
+                    </div>
+
+                    <button class="save-btn" onclick="saveRecord()" id="saveBtn">
+                        <span class="emoji">💾</span> Guardar Registro
+                    </button>
+                </div>
+            </div>
+
+            <div id="historyTab" class="tab-content hidden">
+                <div class="card">
+                    <h3>📋 Historial de Registros</h3>
+                    <div id="historyList">
+                        <div class="loading" style="margin: 20px auto;"></div>
+                        <p style="text-align: center; margin-top: 10px;">Cargando registros...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ⚡ CONFIGURACIÓN DE LA API - USAR TU URL REAL
+        const API_BASE_URL = 'https://field-inspector-backend-production.up.railway.app';
+        
+        // Variables globales
+        let currentUser = null;
+        let authToken = null;
+        let currentPhoto = null;
+        let currentAudioBlob = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let currentLocation = null;
+        let isOnline = navigator.onLine;
+        let isAuthMode = 'login';
+        let apiOnline = false;
+
+        // Estado de la aplicación
+        const appState = {
+            records: [],
+            isLoading: false,
+            lastSync: null
+        };
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            checkApiStatus();
+            checkAuthStatus();
+            setupEventListeners();
+            updateOnlineStatus();
+            getCurrentLocation();
+        });
+
+        // Verificar estado de la API
+        async function checkApiStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`, {
+                    method: 'GET',
+                    timeout: 5000
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    apiOnline = true;
+                    updateApiStatus('✅ Conectado al servidor', 'api-online');
+                    console.log('API conectada:', data);
+                } else {
+                    throw new Error('API response not ok');
+                }
+            } catch (error) {
+                console.error('API no disponible:', error);
+                apiOnline = false;
+                updateApiStatus('❌ Servidor no disponible - Modo offline', 'api-offline');
+            }
+        }
+
+        function updateApiStatus(message, className) {
+            const apiStatus = document.getElementById('apiStatus');
+            apiStatus.textContent = message;
+            apiStatus.className = `api-status ${className}`;
+        }
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Auth form
+            document.getElementById('authForm').addEventListener('submit', handleAuth);
+            document.getElementById('authSwitchLink').addEventListener('click', toggleAuthMode);
+            
+            // Network status
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            
+            // Periodic checks
+            setInterval(checkApiStatus, 30000); // Check API cada 30 segundos
+            setInterval(syncData, 60000); // Sync cada minuto
+        }
+
+        // ============= AUTENTICACIÓN =============
+
+        function checkAuthStatus() {
+            const savedToken = localStorage.getItem('authToken');
+            const savedUser = localStorage.getItem('currentUser');
+            
+            if (savedToken && savedUser) {
+                authToken = savedToken;
+                currentUser = JSON.parse(savedUser);
+                showApp();
+            } else {
+                showAuth();
+            }
+        }
+
+        function toggleAuthMode(e) {
+            e.preventDefault();
+            isAuthMode = isAuthMode === 'login' ? 'register' : 'login';
+            
+            const title = document.getElementById('authTitle');
+            const nameGroup = document.getElementById('nameGroup');
+            const buttonText = document.getElementById('authButtonText');
+            const switchText = document.getElementById('authSwitchText');
+            const switchLink = document.getElementById('authSwitchLink');
+            
+            if (isAuthMode === 'register') {
+                title.textContent = '📝 Crear Cuenta';
+                nameGroup.style.display = 'block';
+                buttonText.textContent = '🚀 Crear Cuenta';
+                switchText.textContent = '¿Ya tienes cuenta?';
+                switchLink.textContent = 'Iniciar sesión';
+            } else {
+                title.textContent = '🔐 Iniciar Sesión';
+                nameGroup.style.display = 'none';
+                buttonText.textContent = '🚀 Iniciar Sesión';
+                switchText.textContent = '¿No tienes cuenta?';
+                switchLink.textContent = 'Crear cuenta';
+            }
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const fullName = document.getElementById('fullName').value;
+            
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const originalText = submitBtn.innerHTML;
+            
+            try {
+                submitBtn.innerHTML = '<div class="loading"></div> Procesando...';
+                submitBtn.disabled = true;
+
+                if (!apiOnline) {
+                    // Modo offline - simular login
+                    currentUser = { 
+                        email: email, 
+                        id: 'offline_user',
+                        full_name: fullName || 'Usuario Offline'
+                    };
+                    authToken = 'offline_token';
+                    
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    showStatus('✅ Sesión iniciada en modo offline', 'success');
+                    showApp();
+                    return;
+                }
+                
+                const endpoint = isAuthMode === 'register' ? '/auth/register' : '/auth/login';
+                const body = isAuthMode === 'register' 
+                    ? { email, password, fullName }
+                    : { email, password };
+                
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.session?.access_token || 'temp_token';
+                    currentUser = data.user;
+                    
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    showStatus(data.message, 'success');
+                    showApp();
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('Error de autenticación:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        function logout() {
+            if (confirm('¿Cerrar sesión?')) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                authToken = null;
+                currentUser = null;
+                showAuth();
+            }
+        }
+
+        function showAuth() {
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('appSection').classList.add('hidden');
+            document.getElementById('userInfo').classList.add('hidden');
+        }
+
+        function showApp() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            document.getElementById('userInfo').classList.remove('hidden');
+            
+            document.getElementById('userEmail').textContent = currentUser.email;
+            loadHistory();
+            syncData();
+        }
+
+        // ============= MANEJO DE CONECTIVIDAD =============
+
+        function updateOnlineStatus() {
+            isOnline = navigator.onLine;
+            const indicator = document.getElementById('syncIndicator');
+            const offlineIndicator = document.getElementById('offlineIndicator');
+            const icon = document.getElementById('syncIcon');
+            const text = document.getElementById('syncText');
+            
+            if (isOnline) {
+                indicator.className = 'sync-indicator sync-online';
+                icon.textContent = '✅';
+                text.textContent = 'Online';
+                offlineIndicator.classList.remove('show');
+                checkApiStatus();
+            } else {
+                indicator.className = 'sync-indicator sync-offline';
+                icon.textContent = '📶';
+                text.textContent = 'Sin conexión';
+                offlineIndicator.classList.add('show');
+                apiOnline = false;
+            }
+        }
+
+        // ============= CAPTURA DE DATOS =============
+
+        function capturePhoto() {
+            document.getElementById('cameraInput').click();
+        }
+
+        function handlePhotoCapture(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentPhoto = file;
+                    const preview = document.getElementById('photoPreview');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    showStatus('📸 Foto capturada correctamente', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function toggleAudioRecording() {
+            const audioBtn = document.getElementById('audioBtn');
+            const audioText = document.getElementById('audioText');
+
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                audioBtn.classList.remove('recording');
+                audioText.textContent = 'Grabar Audio';
+                audioBtn.disabled = true;
+                showStatus('⏹️ Procesando audio...', 'info');
+            } else {
+                try {
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error('Grabación de audio no soportada');
+                    }
+
+                    showStatus('🎤 Solicitando permisos...', 'info');
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            sampleRate: 44100
+                        } 
+                    });
+                    
+                    let mimeType = 'audio/webm';
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                        mimeType = 'audio/webm;codecs=opus';
+                    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                        mimeType = 'audio/mp4';
+                    }
+
+                    mediaRecorder = new MediaRecorder(stream, { mimeType });
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        try {
+                            currentAudioBlob = new Blob(audioChunks, { type: mimeType });
+                            document.getElementById('audioPreview').classList.remove('hidden');
+                            
+                            if (apiOnline && authToken && authToken !== 'offline_token') {
+                                // Intentar transcripción real con la API
+                                await processAudioWithAPI(currentAudioBlob);
+                            } else {
+                                // Transcripción simulada
+                                const mockTranscriptions = [
+                                    "El motor principal presenta vibraciones anómalas y ruido excesivo.",
+                                    "Se detectaron grietas en la estructura metálica del sector B.",
+                                    "Los sensores de temperatura están mostrando lecturas inconsistentes.",
+                                    "Falta de lubricante en la maquinaria de producción.",
+                                    "El sistema de ventilación presenta obstrucciones en los filtros."
+                                ];
+                                const randomTranscription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
+                                document.getElementById('transcriptionInput').value = randomTranscription;
+                                showStatus('🎤 Audio guardado (transcripción simulada)', 'info');
+                            }
+                            
+                            audioBtn.disabled = false;
+                            stream.getTracks().forEach(track => track.stop());
+                        } catch (error) {
+                            console.error('Error processing audio:', error);
+                            showStatus('⚠️ Error al procesar el audio', 'error');
+                            resetAudioRecording();
+                        }
+                    };
+
+                    mediaRecorder.start(1000);
+                    audioBtn.classList.add('recording');
+                    audioText.textContent = '⏹️ Detener';
+                    showStatus('🎤 Grabando... Habla ahora', 'info');
+                    
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
+                    let errorMessage = '❌ Error al acceder al micrófono';
+                    
+                    if (error.name === 'NotAllowedError') {
+                        errorMessage = '🚫 Permisos denegados. Permite el acceso al micrófono.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMessage = '🔍 No se encontró micrófono.';
+                    }
+                    
+                    showStatus(errorMessage, 'error');
+                    resetAudioRecording();
+                }
+            }
+        }
+
+        async function processAudioWithAPI(audioBlob) {
+            try {
+                showStatus('🤖 Transcribiendo con IA...', 'info');
+                
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'audio.wav');
+                
+                const response = await fetch(`${API_BASE_URL}/transcribe`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('transcriptionInput').value = data.transcription;
+                    showStatus('🎤 Audio transcrito correctamente', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('Error en transcripción:', error);
+                // Fallback a transcripción simulada
+                const mockTranscription = "Transcripción simulada: Error de conexión, se procesará cuando haya mejor señal.";
+                document.getElementById('transcriptionInput').value = mockTranscription;
+                showStatus('⚠️ Transcripción simulada (error de conexión)', 'warning');
+            }
+        }
+
+        function resetAudioRecording() {
+            const audioBtn = document.getElementById('audioBtn');
+            const audioText = document.getElementById('audioText');
+            
+            audioBtn.classList.remove('recording');
+            audioText.textContent = 'Grabar Audio';
+            audioBtn.disabled = false;
+            mediaRecorder = null;
+        }
+
+        // ============= GUARDAR Y SINCRONIZAR =============
+
+        async function saveRecord() {
+            const location = document.getElementById('locationInput').value;
+            const notes = document.getElementById('notesInput').value;
+            const transcription = document.getElementById('transcriptionInput').value;
+
+            if (!currentPhoto && !currentAudioBlob) {
+                showStatus('❌ Debes capturar al menos una foto o audio', 'error');
+                return;
+            }
+
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.innerHTML;
+            
+            try {
+                saveBtn.innerHTML = '<div class="loading"></div> Guardando...';
+                saveBtn.disabled = true;
+                
+                if (apiOnline && authToken && authToken !== 'offline_token') {
+                    // Guardar en servidor
+                    await saveToServer(location, notes, transcription);
+                } else {
+                    // Guardar offline
+                    saveOffline(location, notes, transcription);
+                }
+                
+                resetForm();
+                showStatus('✅ Registro guardado correctamente', 'success');
+                loadHistory();
+                
+            } catch (error) {
+                console.error('Error saving record:', error);
+                // Guardar offline como fallback
+                saveOffline(location, notes, transcription);
+                showStatus('✅ Guardado offline (se sincronizará cuando haya conexión)', 'warning');
+                resetForm();
+                loadHistory();
+            } finally {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }
+        }
+
+        async function saveToServer(location, notes, transcription) {
+            const formData = new FormData();
+            
+            if (currentPhoto) {
+                formData.append('photo', currentPhoto);
+            }
+            
+            if (currentAudioBlob) {
+                formData.append('audio', currentAudioBlob);
+            }
+            
+            formData.append('location', location);
+            formData.append('notes', notes);
+            formData.append('transcription', transcription);
+            
+            if (currentLocation) {
+                formData.append('coordinates', JSON.stringify(currentLocation));
+            }
+            
+            const response = await fetch(`${API_BASE_URL}/records`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.error);
+            }
+            
+            return data.record;
+        }
+
+        function saveOffline(location, notes, transcription) {
+            const record = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                location,
+                notes,
+                transcription,
+                coordinates: currentLocation,
+                photo: currentPhoto ? URL.createObjectURL(currentPhoto) : null,
+                audio: currentAudioBlob ? 'offline_audio' : null,
+                synced: false,
+                offline: true
+            };
+            
+            const offlineRecords = JSON.parse(localStorage.getItem('offlineRecords') || '[]');
+            offlineRecords.unshift(record);
+            localStorage.setItem('offlineRecords', JSON.stringify(offlineRecords));
+        }
+
+        async function syncData() {
+            if (!apiOnline || !authToken || authToken === 'offline_token') return;
+            
+            const indicator = document.getElementById('syncIndicator');
+            const icon = document.getElementById('syncIcon');
+            const text = document.getElementById('syncText');
+            
+            try {
+                indicator.className = 'sync-indicator sync-syncing';
+                icon.textContent = '🔄';
+                text.textContent = 'Sincronizando...';
+                
+                await syncOfflineRecords();
+                await loadFromServer();
+                
+                indicator.className = 'sync-indicator sync-online';
+                icon.textContent = '✅';
+                text.textContent = `Sync ${new Date().toLocaleTimeString()}`;
+                
+            } catch (error) {
+                console.error('Error en sincronización:', error);
+                indicator.className = 'sync-indicator sync-offline';
+                icon.textContent = '⚠️';
+                text.textContent = 'Error en sync';
+            }
+        }
+
+        async function syncOfflineRecords() {
+            const offlineRecords = JSON.parse(localStorage.getItem('offlineRecords') || '[]');
+            
+            for (const record of offlineRecords) {
+                try {
+                    await saveToServer(record.location, record.notes, record.transcription);
+                } catch (error) {
+                    console.error('Error syncing offline record:', error);
+                }
+            }
+            
+            if (offlineRecords.length > 0) {
+                localStorage.setItem('offlineRecords', JSON.stringify([]));
+                showStatus(`✅ ${offlineRecords.length} registros sincronizados`, 'success');
+            }
+        }
+
+        async function loadFromServer() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/records`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    appState.records = data.records || [];
+                    displayRecords();
+                }
+                
+            } catch (error) {
+                console.error('Error loading from server:', error);
+            }
+        }
+
+        // ============= HISTORIAL Y VISUALIZACIÓN =============
+
+        async function loadHistory() {
+            if (apiOnline && authToken && authToken !== 'offline_token') {
+                await loadFromServer();
+            } else {
+                const offlineRecords = JSON.parse(localStorage.getItem('offlineRecords') || '[]');
+                appState.records = offlineRecords;
+                displayRecords();
+            }
+        }
+
+        function displayRecords() {
+            const container = document.getElementById('historyList');
+            
+            if (appState.records.length === 0) {
+                container.innerHTML = `
+                    <p style="text-align: center; color: #666; padding: 20px;">
+                        No hay registros aún. ¡Crea tu primer registro! 🚀
+                    </p>
+                `;
+                return;
+            }
+
+            container.innerHTML = appState.records.map(record => {
+                const date = new Date(record.created_at || record.timestamp);
+                const syncStatus = record.synced === false || record.offline ? '📱 Local' : '☁️ Sincronizado';
+                
+                return `
+                    <div class="history-item">
+                        <h4>📅 ${date.toLocaleDateString('es-AR')} - ${date.toLocaleTimeString('es-AR')} <span style="font-size: 0.8em;">${syncStatus}</span></h4>
+                        <p>📍 <strong>Ubicación:</strong> ${record.location || 'No especificada'}</p>
+                        ${record.notes ? `<p>📝 <strong>Notas:</strong> ${record.notes}</p>` : ''}
+                        ${record.transcription ? `<p>🎯 <strong>Transcripción:</strong> ${record.transcription}</p>` : ''}
+                        ${record.photo_url ? `<img src="${record.photo_url}" alt="Foto del registro">` : ''}
+                        ${record.photo && !record.photo_url ? `<img src="${record.photo}" alt="Foto del registro">` : ''}
+                        ${record.audio || record.audio_url ? `<p>🎵 <strong>Audio:</strong> Grabación incluida</p>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============= UTILIDADES =============
+
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        const mockAddress = `Lat: ${currentLocation.lat.toFixed(6)}, Lng: ${currentLocation.lng.toFixed(6)}`;
+                        document.getElementById('locationInput').value = mockAddress;
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                    }
+                );
+            }
+        }
+
+        function resetForm() {
+            currentPhoto = null;
+            currentAudioBlob = null;
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('audioPreview').classList.add('hidden');
+            document.getElementById('notesInput').value = '';
+            document.getElementById('transcriptionInput').value = '';
+            document.getElementById('cameraInput').value = '';
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            event.target.classList.add('active');
+            
+            if (tabName === 'history') {
+                loadHistory();
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusDiv');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 4000);
+        }
+
+        // ============= SERVICE WORKER Y PWA =============
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('SW registered:', registration);
+                } catch (error) {
+                    console.log('SW registration failed:', error);
+                }
+            });
+        }
+
+        // Prompt para instalar PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            const installBtn = document.createElement('button');
+            installBtn.textContent = '📱 Instalar App';
+            installBtn.className = 'capture-btn';
+            installBtn.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
+            installBtn.onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        console.log('PWA installed');
+                    }
+                    deferredPrompt = null;
+                    installBtn.remove();
+                }
+            };
+            
+            document.querySelector('.capture-section').appendChild(installBtn);
+        });
+
+        // Auto-sync cuando la app vuelve al foco
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && apiOnline && authToken && authToken !== 'offline_token') {
+                syncData();
+            }
+        });
+
+        // Debug para desarrollo
+        window.fieldInspectorDebug = {
+            clearLocalData: () => {
+                localStorage.removeItem('offlineRecords');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                location.reload();
+            },
+            getOfflineRecords: () => JSON.parse(localStorage.getItem('offlineRecords') || '[]'),
+            forceSync: () => syncData(),
+            apiUrl: API_BASE_URL,
+            apiStatus: apiOnline
+        };
+
+        console.log('🔧 Field Inspector Pro cargado correctamente');
+        console.log('🌐 API URL:', API_BASE_URL);
+        console.log('🛠️ Debug disponible en window.fieldInspectorDebug');
+    </script>
+</body>
+</html>
