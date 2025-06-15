@@ -1214,12 +1214,25 @@
             forceNewLogin: forceNewLogin
         };
 
+        // Debug para photos
+        window.debugPhotoUrls = () => {
+            console.log('🔍 URLs de fotos en registros:');
+            appState.records.forEach((record, index) => {
+                console.log(`Registro ${index}:`, {
+                    id: record.id,
+                    photo_url: record.photo_url,
+                    has_photo: !!record.photo_url
+                });
+            });
+        };
+
         console.log('🔧 Field Inspector Pro cargado correctamente');
         console.log('🔗 Conectado a:', API_BASE_URL);
         console.log('🐛 Debug disponible en window.fieldInspectorDebug');
         console.log('🔧 Debug functions available:');
         console.log('- window.fieldInspectorDebug.debugAuth()');
         console.log('- window.fieldInspectorDebug.forceNewLogin()');
+        console.log('🔍 Debug photos: window.debugPhotoUrls()');
     </script>
     </script>
 </body>
