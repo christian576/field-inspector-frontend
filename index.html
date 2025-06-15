@@ -6,9 +6,6 @@
     <title>Field Inspector Pro</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#667eea">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
         * {
             margin: 0;
@@ -335,7 +332,8 @@
             100% { transform: rotate(360deg); }
         }
 
-        #cameraInput {
+        #cameraInput,
+        #audioInput {
             display: none;
         }
 
@@ -371,24 +369,6 @@
         .offline-indicator.show {
             transform: translateY(0);
         }
-
-        .api-status {
-            background: rgba(255,255,255,0.2);
-            padding: 8px 12px;
-            border-radius: 8px;
-            color: white;
-            font-size: 0.9em;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .api-online {
-            background: rgba(40, 167, 69, 0.8);
-        }
-
-        .api-offline {
-            background: rgba(220, 53, 69, 0.8);
-        }
     </style>
 </head>
 <body>
@@ -402,13 +382,9 @@
             <p>Inspecciones profesionales con IA</p>
         </div>
 
-        <div class="api-status" id="apiStatus">
-            🔄 Verificando conexión con servidor...
-        </div>
-
         <div class="sync-indicator" id="syncIndicator">
             <span id="syncIcon">🔄</span>
-            <span id="syncText">Iniciando...</span>
+            <span id="syncText">Verificando conexión...</span>
         </div>
 
         <!-- Sección de autenticación -->
@@ -511,8 +487,8 @@
     </div>
 
     <script>
-        // ⚡ CONFIGURACIÓN DE LA API - USAR TU URL REAL
-        const API_BASE_URL = 'https://field-inspector-backend-production.up.railway.app';
+        // ✅ CONFIGURACIÓN CORRECTA DE LA API
+        const API_BASE_URL = 'https://field-inspector-backend-production.up.railway.app/api';
         
         // Variables globales
         let currentUser = null;
@@ -524,7 +500,6 @@
         let currentLocation = null;
         let isOnline = navigator.onLine;
         let isAuthMode = 'login';
-        let apiOnline = false;
 
         // Estado de la aplicación
         const appState = {
@@ -535,55 +510,41 @@
 
         // Inicializar la aplicación
         document.addEventListener('DOMContentLoaded', function() {
-            checkApiStatus();
+            console.log('🚀 Field Inspector iniciando...');
+            console.log('🔗 API URL:', API_BASE_URL);
+            
             checkAuthStatus();
             setupEventListeners();
             updateOnlineStatus();
             getCurrentLocation();
+            testBackendConnection();
         });
 
-        // Verificar estado de la API
-        async function checkApiStatus() {
+        // Probar conexión con backend
+        async function testBackendConnection() {
             try {
-                const response = await fetch(`${API_BASE_URL}/health`, {
-                    method: 'GET',
-                    timeout: 5000
-                });
+                const response = await fetch(API_BASE_URL.replace('/api', '/health'));
+                const data = await response.json();
+                console.log('✅ Backend conectado:', data);
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    apiOnline = true;
-                    updateApiStatus('✅ Conectado al servidor', 'api-online');
-                    console.log('API conectada:', data);
-                } else {
-                    throw new Error('API response not ok');
+                if (data.features?.openai_configured) {
+                    console.log('✅ OpenAI configurado para transcripción');
                 }
             } catch (error) {
-                console.error('API no disponible:', error);
-                apiOnline = false;
-                updateApiStatus('❌ Servidor no disponible - Modo offline', 'api-offline');
+                console.error('❌ Error conectando backend:', error);
+                showStatus('⚠️ Error de conexión con el servidor', 'warning');
             }
-        }
-
-        function updateApiStatus(message, className) {
-            const apiStatus = document.getElementById('apiStatus');
-            apiStatus.textContent = message;
-            apiStatus.className = `api-status ${className}`;
         }
 
         // Configurar event listeners
         function setupEventListeners() {
-            // Auth form
             document.getElementById('authForm').addEventListener('submit', handleAuth);
             document.getElementById('authSwitchLink').addEventListener('click', toggleAuthMode);
             
-            // Network status
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
             
-            // Periodic checks
-            setInterval(checkApiStatus, 30000); // Check API cada 30 segundos
-            setInterval(syncData, 60000); // Sync cada minuto
+            setInterval(syncData, 30000);
         }
 
         // ============= AUTENTICACIÓN =============
@@ -639,28 +600,13 @@
             try {
                 submitBtn.innerHTML = '<div class="loading"></div> Procesando...';
                 submitBtn.disabled = true;
-
-                if (!apiOnline) {
-                    // Modo offline - simular login
-                    currentUser = { 
-                        email: email, 
-                        id: 'offline_user',
-                        full_name: fullName || 'Usuario Offline'
-                    };
-                    authToken = 'offline_token';
-                    
-                    localStorage.setItem('authToken', authToken);
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    
-                    showStatus('✅ Sesión iniciada en modo offline', 'success');
-                    showApp();
-                    return;
-                }
                 
                 const endpoint = isAuthMode === 'register' ? '/auth/register' : '/auth/login';
                 const body = isAuthMode === 'register' 
                     ? { email, password, fullName }
                     : { email, password };
+                
+                console.log('🔐 Intentando autenticación:', endpoint);
                 
                 const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                     method: 'POST',
@@ -671,9 +617,10 @@
                 });
                 
                 const data = await response.json();
+                console.log('📝 Respuesta auth:', data);
                 
                 if (data.success) {
-                    authToken = data.session?.access_token || 'temp_token';
+                    authToken = data.session?.access_token;
                     currentUser = data.user;
                     
                     localStorage.setItem('authToken', authToken);
@@ -716,6 +663,7 @@
             document.getElementById('userInfo').classList.remove('hidden');
             
             document.getElementById('userEmail').textContent = currentUser.email;
+            
             loadHistory();
             syncData();
         }
@@ -732,15 +680,17 @@
             if (isOnline) {
                 indicator.className = 'sync-indicator sync-online';
                 icon.textContent = '✅';
-                text.textContent = 'Online';
+                text.textContent = 'Conectado';
                 offlineIndicator.classList.remove('show');
-                checkApiStatus();
+                
+                if (authToken) {
+                    syncData();
+                }
             } else {
                 indicator.className = 'sync-indicator sync-offline';
                 icon.textContent = '📶';
                 text.textContent = 'Sin conexión';
                 offlineIndicator.classList.add('show');
-                apiOnline = false;
             }
         }
 
@@ -812,21 +762,12 @@
                             currentAudioBlob = new Blob(audioChunks, { type: mimeType });
                             document.getElementById('audioPreview').classList.remove('hidden');
                             
-                            if (apiOnline && authToken && authToken !== 'offline_token') {
-                                // Intentar transcripción real con la API
-                                await processAudioWithAPI(currentAudioBlob);
+                            if (isOnline && authToken) {
+                                await processAudioWithWhisper(currentAudioBlob);
                             } else {
-                                // Transcripción simulada
-                                const mockTranscriptions = [
-                                    "El motor principal presenta vibraciones anómalas y ruido excesivo.",
-                                    "Se detectaron grietas en la estructura metálica del sector B.",
-                                    "Los sensores de temperatura están mostrando lecturas inconsistentes.",
-                                    "Falta de lubricante en la maquinaria de producción.",
-                                    "El sistema de ventilación presenta obstrucciones en los filtros."
-                                ];
-                                const randomTranscription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
-                                document.getElementById('transcriptionInput').value = randomTranscription;
-                                showStatus('🎤 Audio guardado (transcripción simulada)', 'info');
+                                const mockTranscription = "Transcripción offline: El audio se procesará cuando haya conexión.";
+                                document.getElementById('transcriptionInput').value = mockTranscription;
+                                showStatus('🎤 Audio guardado (se procesará online)', 'warning');
                             }
                             
                             audioBtn.disabled = false;
@@ -859,12 +800,14 @@
             }
         }
 
-        async function processAudioWithAPI(audioBlob) {
+        async function processAudioWithWhisper(audioBlob) {
             try {
                 showStatus('🤖 Transcribiendo con IA...', 'info');
                 
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'audio.wav');
+                
+                console.log('🎤 Enviando audio para transcripción...');
                 
                 const response = await fetch(`${API_BASE_URL}/transcribe`, {
                     method: 'POST',
@@ -875,6 +818,7 @@
                 });
                 
                 const data = await response.json();
+                console.log('📝 Respuesta transcripción:', data);
                 
                 if (data.success) {
                     document.getElementById('transcriptionInput').value = data.transcription;
@@ -885,10 +829,7 @@
                 
             } catch (error) {
                 console.error('Error en transcripción:', error);
-                // Fallback a transcripción simulada
-                const mockTranscription = "Transcripción simulada: Error de conexión, se procesará cuando haya mejor señal.";
-                document.getElementById('transcriptionInput').value = mockTranscription;
-                showStatus('⚠️ Transcripción simulada (error de conexión)', 'warning');
+                showStatus('⚠️ Error en transcripción. Se guardará el audio.', 'warning');
             }
         }
 
@@ -921,11 +862,9 @@
                 saveBtn.innerHTML = '<div class="loading"></div> Guardando...';
                 saveBtn.disabled = true;
                 
-                if (apiOnline && authToken && authToken !== 'offline_token') {
-                    // Guardar en servidor
+                if (isOnline && authToken) {
                     await saveToServer(location, notes, transcription);
                 } else {
-                    // Guardar offline
                     saveOffline(location, notes, transcription);
                 }
                 
@@ -935,11 +874,7 @@
                 
             } catch (error) {
                 console.error('Error saving record:', error);
-                // Guardar offline como fallback
-                saveOffline(location, notes, transcription);
-                showStatus('✅ Guardado offline (se sincronizará cuando haya conexión)', 'warning');
-                resetForm();
-                loadHistory();
+                showStatus('❌ Error al guardar', 'error');
             } finally {
                 saveBtn.innerHTML = originalText;
                 saveBtn.disabled = false;
@@ -965,6 +900,8 @@
                 formData.append('coordinates', JSON.stringify(currentLocation));
             }
             
+            console.log('💾 Guardando en servidor...');
+            
             const response = await fetch(`${API_BASE_URL}/records`, {
                 method: 'POST',
                 headers: {
@@ -974,6 +911,7 @@
             });
             
             const data = await response.json();
+            console.log('📊 Respuesta guardar:', data);
             
             if (!data.success) {
                 throw new Error(data.error);
@@ -990,19 +928,18 @@
                 notes,
                 transcription,
                 coordinates: currentLocation,
-                photo: currentPhoto ? URL.createObjectURL(currentPhoto) : null,
+                photo: currentPhoto ? 'offline_photo' : null,
                 audio: currentAudioBlob ? 'offline_audio' : null,
-                synced: false,
-                offline: true
+                synced: false
             };
             
             const offlineRecords = JSON.parse(localStorage.getItem('offlineRecords') || '[]');
-            offlineRecords.unshift(record);
+            offlineRecords.push(record);
             localStorage.setItem('offlineRecords', JSON.stringify(offlineRecords));
         }
 
         async function syncData() {
-            if (!apiOnline || !authToken || authToken === 'offline_token') return;
+            if (!isOnline || !authToken) return;
             
             const indicator = document.getElementById('syncIndicator');
             const icon = document.getElementById('syncIcon');
@@ -1018,7 +955,7 @@
                 
                 indicator.className = 'sync-indicator sync-online';
                 icon.textContent = '✅';
-                text.textContent = `Sync ${new Date().toLocaleTimeString()}`;
+                text.textContent = `Sincronizado ${new Date().toLocaleTimeString()}`;
                 
             } catch (error) {
                 console.error('Error en sincronización:', error);
@@ -1039,14 +976,13 @@
                 }
             }
             
-            if (offlineRecords.length > 0) {
-                localStorage.setItem('offlineRecords', JSON.stringify([]));
-                showStatus(`✅ ${offlineRecords.length} registros sincronizados`, 'success');
-            }
+            localStorage.setItem('offlineRecords', JSON.stringify([]));
         }
 
         async function loadFromServer() {
             try {
+                console.log('📋 Cargando registros del servidor...');
+                
                 const response = await fetch(`${API_BASE_URL}/records`, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
@@ -1054,9 +990,10 @@
                 });
                 
                 const data = await response.json();
+                console.log('📊 Registros recibidos:', data);
                 
                 if (data.success) {
-                    appState.records = data.records || [];
+                    appState.records = data.records;
                     displayRecords();
                 }
                 
@@ -1068,7 +1005,7 @@
         // ============= HISTORIAL Y VISUALIZACIÓN =============
 
         async function loadHistory() {
-            if (apiOnline && authToken && authToken !== 'offline_token') {
+            if (isOnline && authToken) {
                 await loadFromServer();
             } else {
                 const offlineRecords = JSON.parse(localStorage.getItem('offlineRecords') || '[]');
@@ -1091,16 +1028,16 @@
 
             container.innerHTML = appState.records.map(record => {
                 const date = new Date(record.created_at || record.timestamp);
-                const syncStatus = record.synced === false || record.offline ? '📱 Local' : '☁️ Sincronizado';
+                const syncStatus = record.synced === false ? '📱 Local' : '☁️ Sincronizado';
                 
                 return `
                     <div class="history-item">
-                        <h4>📅 ${date.toLocaleDateString('es-AR')} - ${date.toLocaleTimeString('es-AR')} <span style="font-size: 0.8em;">${syncStatus}</span></h4>
+                        <h4>📅 ${date.toLocaleDateString('es-AR')} - ${date.toLocaleTimeString('es-AR')} ${syncStatus}</h4>
                         <p>📍 <strong>Ubicación:</strong> ${record.location || 'No especificada'}</p>
                         ${record.notes ? `<p>📝 <strong>Notas:</strong> ${record.notes}</p>` : ''}
                         ${record.transcription ? `<p>🎯 <strong>Transcripción:</strong> ${record.transcription}</p>` : ''}
                         ${record.photo_url ? `<img src="${record.photo_url}" alt="Foto del registro">` : ''}
-                        ${record.photo && !record.photo_url ? `<img src="${record.photo}" alt="Foto del registro">` : ''}
+                        ${record.photo && record.photo !== 'offline_photo' ? `<img src="${record.photo}" alt="Foto del registro">` : ''}
                         ${record.audio || record.audio_url ? `<p>🎵 <strong>Audio:</strong> Grabación incluida</p>` : ''}
                     </div>
                 `;
@@ -1205,7 +1142,7 @@
 
         // Auto-sync cuando la app vuelve al foco
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && apiOnline && authToken && authToken !== 'offline_token') {
+            if (!document.hidden && isOnline && authToken) {
                 syncData();
             }
         });
@@ -1221,12 +1158,12 @@
             getOfflineRecords: () => JSON.parse(localStorage.getItem('offlineRecords') || '[]'),
             forceSync: () => syncData(),
             apiUrl: API_BASE_URL,
-            apiStatus: apiOnline
+            testConnection: testBackendConnection
         };
 
         console.log('🔧 Field Inspector Pro cargado correctamente');
-        console.log('🌐 API URL:', API_BASE_URL);
-        console.log('🛠️ Debug disponible en window.fieldInspectorDebug');
+        console.log('🔗 Conectado a:', API_BASE_URL);
+        console.log('🐛 Debug disponible en window.fieldInspectorDebug');
     </script>
 </body>
 </html>
