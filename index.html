@@ -1161,9 +1161,66 @@
             testConnection: testBackendConnection
         };
 
+       // ============= DEBUG MEJORADO =============
+
+        // Función para verificar autenticación
+        async function debugAuth() {
+            console.log('🔐 Debug de autenticación:', {
+                hasToken: !!authToken,
+                tokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'No token',
+                currentUser: currentUser,
+                isOnline: isOnline
+            });
+            
+            if (authToken) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/records`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    console.log('🔍 Test de token:', {
+                        status: response.status,
+                        ok: response.ok,
+                        statusText: response.statusText
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.log('❌ Error del servidor:', errorData);
+                    }
+                } catch (error) {
+                    console.error('❌ Error en test de auth:', error);
+                }
+            }
+        }
+
+        // Función para forzar nuevo login
+        async function forceNewLogin() {
+            console.log('🔄 Forzando nuevo login...');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            authToken = null;
+            currentUser = null;
+            showAuth();
+        }
+
+        // Agregar funciones al debug
+        window.fieldInspectorDebug = {
+            ...window.fieldInspectorDebug,
+            debugAuth: debugAuth,
+            forceNewLogin: forceNewLogin
+        };
+
         console.log('🔧 Field Inspector Pro cargado correctamente');
         console.log('🔗 Conectado a:', API_BASE_URL);
         console.log('🐛 Debug disponible en window.fieldInspectorDebug');
+        console.log('🔧 Debug functions available:');
+        console.log('- window.fieldInspectorDebug.debugAuth()');
+        console.log('- window.fieldInspectorDebug.forceNewLogin()');
+    </script>
     </script>
 </body>
 </html>
