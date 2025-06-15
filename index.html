@@ -1036,7 +1036,7 @@
                         <p>📍 <strong>Ubicación:</strong> ${record.location || 'No especificada'}</p>
                         ${record.notes ? `<p>📝 <strong>Notas:</strong> ${record.notes}</p>` : ''}
                         ${record.transcription ? `<p>🎯 <strong>Transcripción:</strong> ${record.transcription}</p>` : ''}
-                        ${record.photo_url ? `<img src="${record.photo_url}" alt="Foto del registro">` : ''}
+                        ${record.photo_url ? `<img src="${record.photo_url}" alt="Foto del registro" style="width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; margin-top: 10px;" onload="console.log('✅ Foto cargada:', this.src)" onerror="console.error('❌ Error cargando foto:', this.src)">` : ''}
                         ${record.photo && record.photo !== 'offline_photo' ? `<img src="${record.photo}" alt="Foto del registro">` : ''}
                         ${record.audio || record.audio_url ? `<p>🎵 <strong>Audio:</strong> Grabación incluida</p>` : ''}
                     </div>
